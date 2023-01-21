@@ -1,0 +1,5 @@
+{
+    "name": "Comfoar for Homeassistant",
+    "hacs": "1.29.1",
+    "homeassistant": "2023.1.0"
+}

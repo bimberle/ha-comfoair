@@ -1,0 +1,20 @@
+{
+    "title": "Zehnder ComfoAir Moxa",
+    "config": {
+        "error": {
+            "cant_connect": "Can't connect to the ComfoAir."
+        },
+        "step": {          
+            "init": {
+                "title": "Configure ComfoAir Connection",
+                "description": "Enter IP and Ports of the Moxa device",
+                "data": {
+                    "moxa_ip_address": "IP address of moxa device",
+                    "moxa_udp_sendport": "UDP port moxa is receiving on",
+                    "moxa_udp_receiveport": "UDP port moxa is sending to"
+
+                }
+            }
+        }
+    }
+}
