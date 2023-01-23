@@ -1,13 +1,5 @@
-"""class for ComfoAir """
-import socket
-import logging
-from typing import Any, Dict
-from .const import *
-from operator import methodcaller
-from datetime import datetime
-import time
+from .comfoair import ComfoAirCommand, ParseData
 
-_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 # Die Checksumme ergibt sich durch Addition aller Bytes (exklusive Start und Ende) plus 173. Tauch
 # der Wert 0x07 doppelt im Datenbereich auf, so wird nur eine 0x07 für die Checksummenberechnung
@@ -21,8 +13,22 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 # Checksumme = 0x16
 
 
+# fixer Teil am Anfang: b'\x07\xf3\x07\xf0\x00
+# fixer Teil am Ende: \x07\x0f
 
-#### ALL READ-COMMANDS
+
+# start: 0x07 0xF0
+# Kommando: Siehe Kommandoliste
+# Anzahl: Anzahl der folgenden Datenbytes
+# Daten: Nutzdaten
+# Checksumme: Checksumme die über Kommando-, Anzahl- und Datenbytes gebildet wurde
+# Ende: 0x07 0x0F
+
+#                              Anzahl
+#           start     kommando  Datn Daten                                                            check ende
+# beispiel: 0x07 0xF0 0x00 0x6A 0x0D 0x03 0x14 0x20 0x43 0x41 0x33 0x35 0x30 0x20 0x6C 0x75 0x78 0x65 0x55 0x07 0x0F
+
+
 SKIPCOMMANDS = ["0x3e","0x3c","0x9c","0xaa"]
 
 class ParseData:
@@ -150,114 +156,3 @@ LEVEL_COMMAND = [
         ) 
 ]
 
-
-
-
-class ComfoAirConnection:
-    def __init__(self, udp_ip, udp_receiveport, udp_sendport):
-        self.UDP_IP = udp_ip
-        self.UDP_RECEIVE_PORT = udp_receiveport
-        self.UDP_SENDPORT = udp_sendport
-        self.isConnected = False
-        
-        loopCount = 0
-
-        # UDP Socket
-        while loopCount < 3:
-            try:
-                self.sendsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                self.sendsocket.settimeout(5)
-                self.reveivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                self.reveivesocket.bind(
-                    # socket.gethostbyname(socket.getfqdn()), self.UDP_RECEIVE_PORT) geht nicht immer
-                    (socket.gethostbyname(socket.getfqdn()), self.UDP_RECEIVE_PORT)
-                )
-                self.reveivesocket.settimeout(5)
-                self.isConnected = True
-                break
-            except Exception as exception:
-                _LOGGER.error("Error connecting to Server")
-            loopCount += 1
-
-    def sendCommand(self, command: ComfoAirCommand):
-        try:
-            _LOGGER.debug("Send command %s", command.title)
-            self.sendsocket.sendto(command.command, (self.UDP_IP, self.UDP_SENDPORT))
-            data, addr = self.reveivesocket.recvfrom(1024)
-            return data
-        except Exception as exception:
-            raise exception
-        
-
-class ComfoAir:
-    def __init__(self, connection):
-        self.connection = connection
-        self.lastcall = None
-    
-    def connect(self, connection):
-        self.connection = connection
-    
-    def isConnected(self):
-        if self.connection is None or self.connection.isConnected == False:
-            return True
-        
-
-    def getAttributesDict(self):
-        attr = {}
-        for comm in QUERYCOMMANDS:
-            for data in comm.parseData:
-                attr[data.name] = data.value
-        
-        return attr
-
-    def setComfoAirSpeed(self, speed):
-        """Method to set level speed"""
-        try:
-            data = self.connection.sendCommand(LEVEL_COMMAND[speed])
-            if data:
-                self.Stufe = speed
-        except Exception as exception:
-            _LOGGER.error("Could not set Fan-Speed! - %s", exception)
-
-    def readAll(self):
-        """Method to read all data"""
-        for comm in QUERYCOMMANDS:
-            try:
-                reply = self.connection.sendCommand(comm)
-                self.parseReply(reply)
-            except Exception as exception:
-                _LOGGER.error("Error sending command %s: %s", comm.title, exception)
-                
-            
-
-
-    def parseReply(self, reply):
-        if reply:
-            replyCommandsValue = hex(reply[5])
-            if replyCommandsValue not in SKIPCOMMANDS:
-                for comm in QUERYCOMMANDS:
-                    if replyCommandsValue == comm.replycommand:
-                        _LOGGER.debug("Parsing %s", comm.title)
-                        self.lastcall = datetime.now()
-                        for parsed in comm.parseData:
-                            parsed.value = reply[parsed.arrayIndex]
-                            _LOGGER.debug("Set Value %s=%s", parsed.name, parsed.value)
-                            
-
-
-
-
-# fixer Teil am Anfang: b'\x07\xf3\x07\xf0\x00
-# fixer Teil am Ende: \x07\x0f
-
-
-# start: 0x07 0xF0
-# Kommando: Siehe Kommandoliste
-# Anzahl: Anzahl der folgenden Datenbytes
-# Daten: Nutzdaten
-# Checksumme: Checksumme die über Kommando-, Anzahl- und Datenbytes gebildet wurde
-# Ende: 0x07 0x0F
-
-#                              Anzahl
-#           start     kommando  Datn Daten                                                            check ende
-# beispiel: 0x07 0xF0 0x00 0x6A 0x0D 0x03 0x14 0x20 0x43 0x41 0x33 0x35 0x30 0x20 0x6C 0x75 0x78 0x65 0x55 0x07 0x0F
