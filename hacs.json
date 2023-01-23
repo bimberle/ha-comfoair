@@ -1,5 +1,6 @@
 {
-    "name": "Comfoar for Homeassistant",
+    "name": "Comfoair for Homeassistant",
     "hacs": "1.29.1",
-    "homeassistant": "2023.1.0"
+    "homeassistant": "2023.1.0",
+    "render_readme": true
 }
