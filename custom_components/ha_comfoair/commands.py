@@ -1,3 +1,4 @@
+from .const import *
 # Die Checksumme ergibt sich durch Addition aller Bytes (exklusive Start und Ende) plus 173. Tauch
 # der Wert 0x07 doppelt im Datenbereich auf, so wird nur eine 0x07 für die Checksummenberechnung
 # benutzt.
