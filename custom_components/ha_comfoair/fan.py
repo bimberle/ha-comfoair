@@ -68,11 +68,14 @@ class ComfoAirFan(FanEntity):
             self.comfoair.connect(self.comfoair_connection())
 
         self.comfoair.readAll()
-        comLevel = self.comfoair.getAttributesDict()[ATTR_CURRENT_STAGE]
-        fanLevel = percentage_to_ordered_list_item(FAN_SPEEDS, self.percentage)
-        if comLevel != fanLevel and comLevel != -1:
-            self.set_percentage(ordered_list_item_to_percentage(FAN_SPEEDS, FAN_SPEEDS[comLevel]))
-        self.schedule_update_ha_state()            
+        try:
+            comLevel = self.comfoair.getAttributesDict()[ATTR_CURRENT_STAGE]
+            fanLevel = percentage_to_ordered_list_item(FAN_SPEEDS, self.percentage)
+            if comLevel != fanLevel and comLevel != -1:
+                self.set_percentage(ordered_list_item_to_percentage(FAN_SPEEDS, FAN_SPEEDS[comLevel]))
+            self.schedule_update_ha_state()     
+        except Exception as exception:
+            LOGGER.error("ComfoAir Error on update: %s", exception)       
 
     def comfoair_connection(self):
         return self.hass.data[DOMAIN][self.entry.entry_id][COMFOAIR_CONNECTION]
