@@ -24,7 +24,7 @@ from .const import FAN_SPEEDS
 from .const import COMFOAIR_CONNECTION
 from .const import DISPATCHER_UPDATE
 
-LOGGER = logging.getLogger(__name__)
+_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 async def async_setup_entry(
@@ -75,7 +75,7 @@ class ComfoAirFan(FanEntity):
                 self.set_percentage(ordered_list_item_to_percentage(FAN_SPEEDS, FAN_SPEEDS[comLevel]))
             self.schedule_update_ha_state()     
         except Exception as exception:
-            LOGGER.error("ComfoAir Error on update: %s", exception)       
+            _LOGGER.error("ComfoAir Error on update: %s", exception)       
 
     def comfoair_connection(self):
         return self.hass.data[DOMAIN][self.entry.entry_id][COMFOAIR_CONNECTION]
