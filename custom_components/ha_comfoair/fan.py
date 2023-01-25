@@ -71,7 +71,7 @@ class ComfoAirFan(FanEntity):
         try:
             comLevel = self.comfoair.getAttributesDict()[ATTR_CURRENT_STAGE]
             fanLevel = percentage_to_ordered_list_item(FAN_SPEEDS, self.percentage)
-            if comLevel != fanLevel and comLevel != -1:
+            if comLevel != fanLevel and comLevel >= 0 and comLevel <= 3:
                 self.set_percentage(ordered_list_item_to_percentage(FAN_SPEEDS, FAN_SPEEDS[comLevel]))
             self.schedule_update_ha_state()     
         except Exception as exception:
