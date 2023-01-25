@@ -6,7 +6,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
 from .const import *
-from .comfoair import ComfoAir
+from .comfoair import ComfoAir, ComfoAirConnection
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class ComfoAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # model=self.config.get(CONF_FRIENDLY_NAME, None),
             )
             comfoAir = ComfoAir(connection=conn)
-            comfoAir.readFanData()
+            comfoAir.readAll()
 
             if comfoAir.Stufe == -1:
                 errors["base"] = "cant_connect"
