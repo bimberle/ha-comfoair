@@ -54,18 +54,14 @@ def device_info(entry):
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     _LOGGER.debug("Unloading")
-    # hass.data[DOMAIN][DATA_WORKING] = False
-    for component in PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_unload(entry, component)
-        )
-    # hass.data[DOMAIN][DATA_CANCEL]()
-    # await hass.async_add_executor_job(
-    #    hass.data[DOMAIN][entry.entry_id][DATA_CONNECTION].stop
-    # )
-    # hass.data[DOMAIN][entry.entry_id][DATA_CONNECTION] = None
-    _LOGGER.debug("Entry unloaded")
-    return True
+    """Handle removal of an entry."""
+    unload_ok = bool(
+        await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
+    )
+    if unload_ok:
+        hass.data[DOMAIN].pop(config_entry.entry_id)
+
+    return unload_ok
 
 
 async def entry_update_listener(hass, entry):
