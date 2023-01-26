@@ -27,9 +27,11 @@ class ComfoAirConnection:
                 self.sendsocket.settimeout(5)
                 self.reveivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 try:
+                    host = socket.gethostbyname(socket.getfqdn())
+                    _LOGGER.error("Host=%s", host)
                     self.reveivesocket.bind(
                         # socket.gethostbyname(socket.getfqdn()), self.UDP_RECEIVE_PORT) geht nicht immer
-                        (socket.gethostbyname(socket.getfqdn()), self.UDP_RECEIVE_PORT)
+                        (host, self.UDP_RECEIVE_PORT)
                     )
                 except Exception as excepti:
                     _LOGGER.error("Error setting up binding to Port %s", self.UDP_RECEIVE_PORT)
