@@ -28,16 +28,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         udp_receiveport=entry.data[CONFIG_UDP_RECEIVE_PORT],
         udp_sendport=entry.data[CONFIG_UDP_SENDPORT],
     )
+    
+    
+    try:
+        await connection.connect()
+        if connection.isConnected:
+            hass.data[DOMAIN][entry.entry_id][COMFOAIR_CONNECTION] = connection
+            hass.data[DOMAIN][DATA_DEVICE_INFO] = lambda: device_info(entry)
 
-    hass.data[DOMAIN][entry.entry_id][COMFOAIR_CONNECTION] = connection
-    hass.data[DOMAIN][DATA_DEVICE_INFO] = lambda: device_info(entry)
+            for component in PLATFORMS:
+                hass.async_create_task(
+                    hass.config_entries.async_forward_entry_setup(entry, component)
+                )
+            return True
+    except (asyncio.TimeoutError, TimeoutException) as ex:
+        raise ConfigEntryNotReady(f"Timeout while connecting to {CONFIG_MOXA_IP}") from ex
 
-    for component in PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, component)
-        )
-
-    return True
+    
+    
 
 
 def device_info(entry):
