@@ -27,6 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         udp_ip=entry.data[CONFIG_MOXA_IP],
         udp_receiveport=entry.data[CONFIG_UDP_RECEIVE_PORT],
         udp_sendport=entry.data[CONFIG_UDP_SENDPORT],
+        local_ip=entry.data[CONFIG_OPTIONAL_LOCAL_IP]
     )
     
     
@@ -41,6 +42,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                     hass.config_entries.async_forward_entry_setup(entry, component)
                 )
             return True
+        # mal abwarten ob sich die Komponente erneut lädt
+        else:
+            return False
     except (asyncio.TimeoutError, TimeoutException) as ex:
         raise ConfigEntryNotReady(f"Timeout while connecting to {CONFIG_MOXA_IP}") from ex
 

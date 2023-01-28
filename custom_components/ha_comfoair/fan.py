@@ -56,6 +56,10 @@ class ComfoAirFan(FanEntity):
         self.entry = entry
         conn = hass.data[DOMAIN][entry.entry_id][COMFOAIR_CONNECTION] 
         self.comfoair = ComfoAir(conn)
+        
+        # Init value
+        self.set_percentage(50)
+        
     
     async def async_added_to_hass(self) -> None:
         self.update()
@@ -67,15 +71,11 @@ class ComfoAirFan(FanEntity):
         if self.comfoair.isConnected() == False:
             self.comfoair.connect(self.comfoair_connection())
 
-        self.comfoair.readAll()
-        comLevel = self.comfoair.getAttributesDict()[ATTR_CURRENT_STAGE]
-        fanLevel = percentage_to_ordered_list_item(FAN_SPEEDS, self.percentage)
-        if comLevel != fanLevel and comLevel > -1 and comLevel <= len(FAN_SPEEDS)-1:
-            self.set_percentage(ordered_list_item_to_percentage(FAN_SPEEDS, FAN_SPEEDS[comLevel]))
         self.schedule_update_ha_state()            
 
     def comfoair_connection(self):
         return self.hass.data[DOMAIN][self.entry.entry_id][COMFOAIR_CONNECTION]
+    
     
     @property
     def name(self):
@@ -92,11 +92,15 @@ class ComfoAirFan(FanEntity):
         return f"{DOMAIN}_{self.entry.entry_id}"
         #return self.hass.data[DOMAIN][DATA_DEVICE_INFO]()
 
+    @property
+    def speed_count(self) -> int:
+        """Return the number of speeds the fan supports."""
+        return len(FAN_SPEEDS)-2
 
     @property
     def speed_count(self) -> int:
         """Return the number of speeds the fan supports."""
-        return len(FAN_SPEEDS)
+        return 3
 
     def set_percentage(self, percentage: int) -> None:
         """Set the speed of the fan, as a percentage."""

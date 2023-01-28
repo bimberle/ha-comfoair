@@ -75,11 +75,13 @@ class ComfoAir:
         self.connection = connection
         self.attributes = ComfoAirParsing().getInitAttributes()
     
-    def connect(self, connection):
-        self.connection = connection
+    def connect(self):
+        self.connection.connect()
     
     def isConnected(self):
         if self.connection is None or self.connection.isConnected == False:
+            return False
+        else:
             return True
         
 

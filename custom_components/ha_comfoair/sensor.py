@@ -13,6 +13,8 @@ from .comfoair import ComfoAir
 from .const import *
 
 _LOGGER = logging.getLogger(__name__)
+# Only at the beginning
+SCAN_INTERVAL = timedelta(minutes=10)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -32,11 +34,13 @@ class ComfoAirDataSensor(SensorEntity):
         self.entry = entry
         self.sensor_type = SENSOR
         self._attributes = None
-        self._state = None
+        self._state = OFFLINE_TEXT
+        self._icon = ICON_ONLINE
         conn = hass.data[DOMAIN][entry.entry_id][COMFOAIR_CONNECTION] 
         self.comfoair = ComfoAir(conn)
 
     async def async_added_to_hass(self):
+        self.comfoair.readAll()
         self.update()
         self.async_on_remove(
             async_dispatcher_connect(self.hass, DISPATCHER_UPDATE, self.update)
@@ -48,9 +52,26 @@ class ComfoAirDataSensor(SensorEntity):
             
         self.comfoair.readAll()
         self._attributes = self.comfoair.getAttributesDict()
-        self._state = self.comfoair.isConnected()
+        self.set_icon_and_state()
+        
         self.schedule_update_ha_state()
 
+    @property
+    def icon(self):
+        return self._icon
+
+    
+    def set_icon_and_state(self) -> None:
+        """Set the state and icon of the sensor."""
+        if self._attributes[ATTR_CURRENT_STAGE] != -1:
+            self._icon = ICON_ONLINE
+            self._state = self._attributes[ATTR_CURRENT_STAGE]
+        else:
+            self._icon = ICON_OFFLINE
+            self._state = OFFLINE_TEXT
+        #self.async_write_ha_state()
+        
+        
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return entity specific state attributes for babybuddy."""
@@ -60,6 +81,7 @@ class ComfoAirDataSensor(SensorEntity):
     def state(self):
         """Return the state of the device."""
         return self._state
+
         
     #@property
     def comfoair_connection(self):
@@ -76,7 +98,7 @@ class ComfoAirDataSensor(SensorEntity):
 
     @property
     def last_update(self):
-        return None
+        return self.comfoair.attributes[ATTR_LASTCALL]
 
     @property
     def name(self):
@@ -84,10 +106,6 @@ class ComfoAirDataSensor(SensorEntity):
         return (
             FRIENDLY_NAME + " " + self.entry.data.get(CONF_FRIENDLY_NAME, "")
         ).strip()
-
-    @property
-    def icon(self):
-        return "mdi:climate"
 
     @property
     def available(self):

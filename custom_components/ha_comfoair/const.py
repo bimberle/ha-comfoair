@@ -60,3 +60,6 @@ ATTR_ROTATION_USED_AIR = "rotation_abluft"
 ATTR_CURRENT_STAGE = "aktuelle_stufe"
 
 FAN_SPEEDS = [0,1,2,3]
+OFFLINE_TEXT = "Offline"
+ICON_OFFLINE = "mdi:fan-alert"
+ICON_ONLINE = "mdi:fan"
