@@ -11,8 +11,8 @@
                 "data": {
                     "moxa_ip_address": "IP address of moxa device",
                     "moxa_udp_sendport": "UDP port moxa is receiving on",
-                    "moxa_udp_receiveport": "UDP port moxa is sending to"
-
+                    "moxa_udp_receiveport": "UDP port moxa is sending to",
+                    "ha_local_ip": "Optional: HA ip address"
                 }
             }
         }

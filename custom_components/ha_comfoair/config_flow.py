@@ -36,11 +36,12 @@ class ComfoAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             conn = ComfoAirConnection(
                 udp_ip=self.config[CONFIG_MOXA_IP],
                 udp_receiveport=self.config[CONFIG_UDP_RECEIVE_PORT],
-                udp_sendport=self.config[CONFIG_UDP_SENDPORT]
+                udp_sendport=self.config[CONFIG_UDP_SENDPORT],
+                local_ip=self.config[CONFIG_OPTIONAL_LOCAL_IP]
                 # model=self.config.get(CONF_FRIENDLY_NAME, None),
             )
             comfoAir = ComfoAir(connection=conn)
-            comfoAir.readAll()
+            comfoAir.readFanData()
 
             if comfoAir.Stufe == -1:
                 errors["base"] = "cant_connect"
@@ -60,6 +61,7 @@ class ComfoAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.config[CONFIG_MOXA_IP] = user_input[CONFIG_MOXA_IP]
             self.config[CONFIG_UDP_RECEIVE_PORT] = user_input[CONFIG_UDP_RECEIVE_PORT]
             self.config[CONFIG_UDP_SENDPORT] = user_input[CONFIG_UDP_SENDPORT]
+            self.config[CONFIG_OPTIONAL_LOCAL_IP] = user_input[CONFIG_OPTIONAL_LOCAL_IP]
             fname = f"{self.config.get(CONF_FRIENDLY_NAME, FRIENDLY_NAME)} ({self.config[CONFIG_MOXA_IP]})"
             # _LOGGER.debug(f"saving config: {self.config}")
             if self.entry:
@@ -89,6 +91,10 @@ class ComfoAirConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONFIG_UDP_SENDPORT, CONFIG_UDP_SENDPORT_DEFAULT
                     ),
                 ): cv.positive_int,
+                vol.Optional(
+                    CONFIG_OPTIONAL_LOCAL_IP,
+                    default=self.config.get(CONFIG_OPTIONAL_LOCAL_IP, CONFIG_OPTIONAL_LOCAL_IP_DEFAULT),
+                ): cv.string,
             }
         )
 

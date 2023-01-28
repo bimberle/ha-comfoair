@@ -31,6 +31,8 @@ class ComfoAirDataSensor(SensorEntity):
         self.hass = hass
         self.entry = entry
         self.sensor_type = SENSOR
+        self._attributes = None
+        self._state = None
         conn = hass.data[DOMAIN][entry.entry_id][COMFOAIR_CONNECTION] 
         self.comfoair = ComfoAir(conn)
 
@@ -45,13 +47,20 @@ class ComfoAirDataSensor(SensorEntity):
             self.comfoair.connect(self.comfoair_connection())
             
         self.comfoair.readAll()
+        self._attributes = self.comfoair.getAttributesDict()
+        self._state = self.comfoair.isConnected()
         self.schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return entity specific state attributes for babybuddy."""
-        return self.comfoair.getAttributesDict()
+        return self._attributes
 
+    @property
+    def state(self):
+        """Return the state of the device."""
+        return self._state
+        
     #@property
     def comfoair_connection(self):
         return self.hass.data[DOMAIN][self.entry.entry_id][COMFOAIR_CONNECTION]

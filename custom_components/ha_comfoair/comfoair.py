@@ -4,19 +4,19 @@ import logging
 from typing import Any, Dict
 from .const import *
 from operator import methodcaller
-from datetime import datetime
 import time
-from .commands import ComfoAirCommand, ParseData, SKIPCOMMANDS, QUERYCOMMANDS, ACKNOLAGE_STRING, LEVEL_COMMAND
+from .commands import ComfoAirCommand, ParseData, ComfoAirParsing, SKIPCOMMANDS, QUERYCOMMANDS, ACKNOLAGE_STRING, LEVEL_COMMAND, SPECIAL_COMMAND_ROTATION, SPECIAL_COMMAND_TEMPCALCULATION, SPECIAL_COMMAND_LEVEL
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 class ComfoAirConnection:
-    def __init__(self, udp_ip, udp_receiveport, udp_sendport):
+    def __init__(self, udp_ip, udp_receiveport, udp_sendport, local_ip=None):
         self.UDP_IP = udp_ip
         self.UDP_RECEIVE_PORT = udp_receiveport
         self.UDP_SENDPORT = udp_sendport
         self.isConnected = False
+        self.local_ip = local_ip
         
         loopCount = 0
 
@@ -26,19 +26,30 @@ class ComfoAirConnection:
                 self.sendsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self.sendsocket.settimeout(5)
                 self.reveivesocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                try:
-                    host = socket.gethostbyname(socket.getfqdn())
-                    _LOGGER.error("Host=%s", host)
+                if self.local_ip is None:
+                    host = None
+                    try:
+                        host = socket.gethostbyname(socket.gethostname())
+                    except Exception as hostNotFound:
+                        _LOGGER.warning("Host not found %s", hostNotFound)
+                    
+                    if host == None:
+                        try:
+                            host = socket.gethostbyname(socket.getfqdn())
+                        except Exception as hostNotFound:
+                            _LOGGER.warning("Host not found %s", hostNotFound)
+                else:
+                    host = self.local_ip
+                
+                #host = socket.gethostbyname(socket.getfqdn())
+                if host != None:
                     self.reveivesocket.bind(
                         # socket.gethostbyname(socket.getfqdn()), self.UDP_RECEIVE_PORT) geht nicht immer
                         (host, self.UDP_RECEIVE_PORT)
                     )
-                except Exception as excepti:
-                    _LOGGER.error("Error setting up binding to Port %s", self.UDP_RECEIVE_PORT)
-                    
-                self.reveivesocket.settimeout(5)
-                self.isConnected = True
-                break
+                    self.reveivesocket.settimeout(5)
+                    self.isConnected = True
+                    break
             except Exception as exception:
                 _LOGGER.error("Error connecting to Server")
             loopCount += 1
@@ -48,7 +59,7 @@ class ComfoAirConnection:
             _LOGGER.debug("Send command %s", command.title)
             self.sendsocket.sendto(command.command, (self.UDP_IP, self.UDP_SENDPORT))
             data, addr = self.reveivesocket.recvfrom(1024)
-            return data
+            return ComfoAirParsing().parseReply(data)
         except Exception as exception:
             raise exception
         
@@ -56,7 +67,7 @@ class ComfoAirConnection:
 class ComfoAir:
     def __init__(self, connection):
         self.connection = connection
-        self.lastcall = None
+        self.attributes = ComfoAirParsing().getInitAttributes()
     
     def connect(self, connection):
         self.connection = connection
@@ -67,12 +78,7 @@ class ComfoAir:
         
 
     def getAttributesDict(self):
-        attr = {}
-        for comm in QUERYCOMMANDS:
-            for data in comm.parseData:
-                attr[data.name] = data.value
-        
-        return attr
+        return self.attributes
 
     def setComfoAirSpeed(self, speed):
         """Method to set level speed"""
@@ -88,24 +94,12 @@ class ComfoAir:
         for comm in QUERYCOMMANDS:
             try:
                 reply = self.connection.sendCommand(comm)
-                self.parseReply(reply)
+                if reply:
+                    for key in reply.keys():
+                        self.attributes[key] = reply[key]
             except Exception as exception:
                 _LOGGER.error("Error sending command %s: %s", comm.title, exception)
                 
-            
-
-
-    def parseReply(self, reply):
-        if reply:
-            replyCommandsValue = hex(reply[5])
-            if replyCommandsValue not in SKIPCOMMANDS:
-                for comm in QUERYCOMMANDS:
-                    if replyCommandsValue == comm.replycommand:
-                        _LOGGER.debug("Parsing %s", comm.title)
-                        self.lastcall = datetime.now()
-                        for parsed in comm.parseData:
-                            parsed.value = reply[parsed.arrayIndex]
-                            _LOGGER.debug("Set Value %s=%s", parsed.name, parsed.value)
                             
 
 

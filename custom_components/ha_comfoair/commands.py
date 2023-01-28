@@ -1,4 +1,5 @@
 from .const import *
+from datetime import datetime
 # Die Checksumme ergibt sich durch Addition aller Bytes (exklusive Start und Ende) plus 173. Tauch
 # der Wert 0x07 doppelt im Datenbereich auf, so wird nur eine 0x07 für die Checksummenberechnung
 # benutzt.
@@ -28,12 +29,16 @@ from .const import *
 
 
 SKIPCOMMANDS = ["0x3e","0x3c","0x9c","0xaa"]
+SPECIAL_COMMAND_ROTATION = "rotation"
+SPECIAL_COMMAND_TEMPCALCULATION = "tempcalculation"
+SPECIAL_COMMAND_LEVEL = "level"
 
 class ParseData:
-    def __init__(self, name, value, arrayIndex):
+    def __init__(self, name, value, arrayIndex, specialCommand=None):
         self.name = name
         self.arrayIndex = arrayIndex
         self.value = value
+        self.specialCommand = specialCommand
 
 class ComfoAirCommand:
     def __init__(self, title, command, replycommand, parseData=None):
@@ -41,6 +46,8 @@ class ComfoAirCommand:
         self.command = command
         self.replycommand = replycommand
         self.parseData = parseData
+        
+    
 
 QUERYCOMMANDS = [
     ComfoAirCommand(
@@ -70,20 +77,21 @@ QUERYCOMMANDS = [
             ParseData(name=ATTR_PERCENT_IN_LEVEL3, value=-1, arrayIndex=18),
             ParseData(name=ATTR_PERCENT_OUT, value=-1, arrayIndex=13),
             ParseData(name=ATTR_PERCENT_IN, value=-1, arrayIndex=14),
-            ParseData(name=ATTR_CURRENT_STAGE, value=-1, arrayIndex=15),
+            ParseData(name=ATTR_CURRENT_STAGE, value=-1, arrayIndex=15, specialCommand=SPECIAL_COMMAND_LEVEL),
         ]
     ),
 
     ComfoAirCommand(
         title="Query Temperature Status",
-        command=b"\x07\xf0\x00\x0f\x00\x00\xbc\x07\x0f",
-        # checksum = 0 + 15 + 0 + 0 + 173 = 188 -> 0xbc -> bc
-        replycommand="0x10",
+        command=b"\x07\xf0\x00\xd1\x00\x00\x7e\x07\x0f",
+        # checksum = 0 + 209 + 0 + 0 + 173 = 382 -> 0x17e -> 7e
+        replycommand="0xd2",
         parseData= [
-            ParseData(name=ATTR_TEMP_OUTSIDE, value=-1, arrayIndex=7),
-            ParseData(name=ATTR_TEMP_SUPPLY_AIR, value=-1, arrayIndex=8),
-            ParseData(name=ATTR_TEMP_USED_AIR, value=-1, arrayIndex=9),
-            ParseData(name=ATTR_TEMP_FORT_AIR, value=-1, arrayIndex=10),
+            ParseData(name=ATTR_TEMP_KOMFORT, value=-1, arrayIndex=7, specialCommand=SPECIAL_COMMAND_TEMPCALCULATION),
+            ParseData(name=ATTR_TEMP_OUTSIDE, value=-1, arrayIndex=8, specialCommand=SPECIAL_COMMAND_TEMPCALCULATION),
+            ParseData(name=ATTR_TEMP_SUPPLY_AIR, value=-1, arrayIndex=9, specialCommand=SPECIAL_COMMAND_TEMPCALCULATION),
+            ParseData(name=ATTR_TEMP_USED_AIR, value=-1, arrayIndex=10, specialCommand=SPECIAL_COMMAND_TEMPCALCULATION),
+            ParseData(name=ATTR_TEMP_FORT_AIR, value=-1, arrayIndex=11, specialCommand=SPECIAL_COMMAND_TEMPCALCULATION),
         ]
     ),
 
@@ -105,6 +113,8 @@ QUERYCOMMANDS = [
         parseData= [
             ParseData(name=ATTR_SUPPLY_AIR_PERCENTAGE, value=-1, arrayIndex=7),
             ParseData(name=ATTR_USED_AIR_PERCENTAGE, value=-1, arrayIndex=8),
+            ParseData(name=ATTR_ROTATION_SUPPLY_AIR, value=-1, arrayIndex=9, specialCommand=SPECIAL_COMMAND_ROTATION),
+            ParseData(name=ATTR_ROTATION_USED_AIR, value=-1, arrayIndex=11, specialCommand=SPECIAL_COMMAND_ROTATION),
         ]
         )
 ]
@@ -153,4 +163,36 @@ LEVEL_COMMAND = [
         replycommand=ACKNOLAGE_STRING
         ) 
 ]
+
+class ComfoAirParsing:
+    def getInitAttributes(self):
+        attr = { ATTR_LASTCALL: None}
+        for com in QUERYCOMMANDS:
+            for attribute in com.parseData:
+                attr[attribute.name] = -1
+        return attr
+    
+    def parseReply(self, reply):
+        attr = None
+        if reply:
+            replyCommandsValue = hex(reply[5])
+            if replyCommandsValue not in SKIPCOMMANDS:
+                attr = {}
+                for comm in QUERYCOMMANDS:
+                    if replyCommandsValue == comm.replycommand:
+                        attr[ATTR_LASTCALL] = datetime.now()
+                        for parsed in comm.parseData:
+                            value = -1
+                            if parsed.specialCommand:
+                                if parsed.specialCommand == SPECIAL_COMMAND_ROTATION:
+                                    value = reply[parsed.arrayIndex]*100 + reply[parsed.arrayIndex+1]
+                                elif parsed.specialCommand == SPECIAL_COMMAND_TEMPCALCULATION:
+                                    value = (reply[parsed.arrayIndex] / 2.0) - 20
+                                elif parsed.specialCommand == SPECIAL_COMMAND_LEVEL:
+                                    value = reply[parsed.arrayIndex]-1
+                            else:
+                                value = reply[parsed.arrayIndex]
+                            attr[parsed.name] = value
+
+        return attr
 

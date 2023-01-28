@@ -13,6 +13,8 @@ CONFIG_UDP_SENDPORT = "moxa_udp_sendport"
 CONFIG_UDP_SENDPORT_DEFAULT = "6999"
 CONFIG_UDP_RECEIVE_PORT = "moxa_udp_receiveport"
 CONFIG_UDP_RECEIVE_PORT_DEFAULT = "7001"
+CONFIG_OPTIONAL_LOCAL_IP_DEFAULT = "192.168.178.77"
+CONFIG_OPTIONAL_LOCAL_IP = "local_ip"
 
 
 DEFAULT_NAME = DOMAIN
@@ -37,8 +39,7 @@ ATTR_SUPPLY_AIR_SPEED = "speed_supply_air"
 ATTR_SUPPLY_AIR_PERCENTAGE = "supply_air_percentage"
 ATTR_USED_AIR_SPEED = "speed_used_air"
 ATTR_USED_AIR_PERCENTAGE = "used_air_percentage"
-ATTR_ROTATION_SUPPLY_AIR = "rotation_supply_air"
-ATTR_ROTATION_USED_AIR = "rotation_used_air"
+
 ATTR_BYPASS_STATUS = "bypass_status"
 ATTR_FILTER_OK = "filterstatus"
 ATTR_STAGE = "stage"
@@ -54,6 +55,8 @@ ATTR_PERCENT_IN_LEVEL2 = "percent_zuluft_stufe2"
 ATTR_PERCENT_IN_LEVEL3 = "percent_zuluft_stufe3"
 ATTR_PERCENT_OUT = "percent_abluft_ist"
 ATTR_PERCENT_IN = "percent_zuluft_ist"
+ATTR_ROTATION_SUPPLY_AIR = "rotation_zuluft"
+ATTR_ROTATION_USED_AIR = "rotation_abluft"
 ATTR_CURRENT_STAGE = "aktuelle_stufe"
 
 FAN_SPEEDS = [0,1,2,3]
